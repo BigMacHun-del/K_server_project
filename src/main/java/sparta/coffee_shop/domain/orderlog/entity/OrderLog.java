@@ -42,7 +42,7 @@ public class OrderLog {
         this.createdAt = LocalDateTime.now();
     }
 
-    public OrdersLog(Order order, OrderStatus fromStatus, OrderStatus toStatus, String reason) {
+    public OrderLog(Order order, OrderStatus fromStatus, OrderStatus toStatus, String reason) {
         this.order = order;
         this.fromStatus = fromStatus;
         this.toStatus = toStatus;

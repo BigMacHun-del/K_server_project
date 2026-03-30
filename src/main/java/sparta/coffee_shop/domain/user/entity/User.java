@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import sparta.coffee_shop.common.BaseEntity;
+import sparta.coffee_shop.common.entity.BaseEntity;
 
 @Getter
 @Entity

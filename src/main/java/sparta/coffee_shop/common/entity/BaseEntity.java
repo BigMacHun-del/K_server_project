@@ -1,4 +1,4 @@
-package sparta.coffee_shop.common;
+package sparta.coffee_shop.common.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
