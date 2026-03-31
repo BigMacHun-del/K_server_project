@@ -4,11 +4,15 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+import org.springframework.scheduling.annotation.EnableAsync;
 import sparta.coffee_shop.domain.point.entity.Point;
 import sparta.coffee_shop.domain.point.repository.PointRepository;
 import sparta.coffee_shop.domain.user.entity.User;
 import sparta.coffee_shop.domain.user.repository.UserRepository;
 
+@EnableAsync
+@EnableJpaAuditing
 @SpringBootApplication
 public class CoffeeShopApplication {
 

@@ -38,7 +38,7 @@ public class Payment {
     }
 
     public Payment(Order order, int totalPrice, PaymentStatus status) {
-        this.order = this.order;
+        this.order = order;
         this.totalPrice = totalPrice;
         this.status = status;
     }

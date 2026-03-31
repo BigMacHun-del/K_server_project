@@ -13,4 +13,9 @@ public class Constants {
     // 포인트
     public static final String MSG_POINT_NOT_FOUND = "포인트 정보를 찾을 수 없습니다.";
     public static final String MSG_POINT_INSUFFICIENT = "포인트 잔액이 부족합니다.";
+
+    // 메뉴
+    public static final String MSG_MENU_NOT_FOUND = "존재하지 않는 메뉴입니다.";
+    public static final String MSG_MENU_NOT_ACTIVE = "현재 주문할 수 없는 메뉴입니다.";
+
 }

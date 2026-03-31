@@ -14,7 +14,11 @@ public enum ErrorEnum {
 
     // 포인트
     ERR_POINT_NOT_FOUND(HttpStatus.NOT_FOUND, MSG_POINT_NOT_FOUND),
-    ERR_POINT_INSUFFICIENT(HttpStatus.BAD_REQUEST, MSG_POINT_INSUFFICIENT);
+    ERR_POINT_INSUFFICIENT(HttpStatus.BAD_REQUEST, MSG_POINT_INSUFFICIENT),
+
+    // 메뉴
+    ERR_MENU_NOT_FOUND(HttpStatus.NOT_FOUND, MSG_MENU_NOT_FOUND),
+    ERR_MENU_NOT_ACTIVE(HttpStatus.BAD_REQUEST, MSG_MENU_NOT_ACTIVE);
 
     private final HttpStatus status;
     private final String message;
