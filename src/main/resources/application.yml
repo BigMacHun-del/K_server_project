@@ -8,3 +8,7 @@ spring:
     url: jdbc:mysql://localhost:3306/coffee
     username: root
     password: 12345678
+  data:
+    redis:
+      host: localhost
+      port: 6379
