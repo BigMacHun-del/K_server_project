@@ -9,7 +9,12 @@ import sparta.coffee_shop.common.entity.BaseEntity;
 @Getter
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "users")
+@Table(
+        name = "users",
+        indexes = {
+                @Index(name = "idx_users_user_key", columnList = "user_key")
+        }
+)
 public class User extends BaseEntity {
 
     @Id

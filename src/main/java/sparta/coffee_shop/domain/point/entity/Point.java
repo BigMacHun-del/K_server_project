@@ -10,7 +10,12 @@ import sparta.coffee_shop.domain.user.entity.User;
 @Getter
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "points")
+@Table(
+        name = "points",
+        indexes = {
+                @Index(name = "idx_points_user_id", columnList = "user_id")
+        }
+)
 public class Point extends BaseEntity {
 
     @Id
