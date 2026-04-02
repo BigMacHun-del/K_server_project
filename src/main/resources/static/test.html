@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>포트원 결제 테스트</title>
+    <script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
+</head>
+<body>
+<h2>커피 결제 테스트</h2>
+<p>merchantUid: <input id="merchantUid" value="order-xxxx" style="width:300px"/></p>
+<button onclick="pay()">3000원 결제</button>
+<pre id="result"></pre>
+
+<script>
+    async function pay() {
+        const merchantUid = document.getElementById('merchantUid').value;
+
+        const response = await PortOne.requestPayment({
+            storeId: "store-57176d9b-b24d-4746-9853-41b146c4d95a",
+            channelKey: "channel-key-1fae4695-9665-4cf1-ad57-f6d41fc3fa2c",
+            paymentId: merchantUid,
+            orderName: "아메리카노",
+            totalAmount: 3000,
+            currency: "KRW",
+            payMethod: "EASY_PAY",
+            customData: merchantUid,
+        });
+
+        document.getElementById('result').textContent = JSON.stringify(response, null, 2);
+
+        if (response.code === 0) {
+            const verifyRes = await fetch('http://localhost:8080/api/coffee/payments/portone', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    merchantUid: merchantUid,
+                    portonePaymentId: response.paymentId
+                })
+            });
+            const data = await verifyRes.json();
+            document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+        }
+    }
+</script>
+</body>
+</html>

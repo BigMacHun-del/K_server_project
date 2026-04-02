@@ -18,4 +18,12 @@ public class Constants {
     public static final String MSG_MENU_NOT_FOUND = "존재하지 않는 메뉴입니다.";
     public static final String MSG_MENU_NOT_ACTIVE = "현재 주문할 수 없는 메뉴입니다.";
 
+    // 주문
+    public static final String MSG_ORDER_NOT_FOUND = "존재하지 않는 주문입니다.";
+
+    // 결제
+    public static final String MSG_PAYMENT_NOT_FOUND = "결제 정보를 찾을 수 없습니다.";
+    public static final String MSG_PAYMENT_AMOUNT_MISMATCH = "결제 금액이 일치하지 않습니다.";
+    public static final String MSG_PAYMENT_ALREADY_PROCESSED = "이미 처리된 결제입니다.";
+    public static final String MSG_PAYMENT_PORTONE_FAILED = "포트원 결제 검증에 실패했습니다.";
 }
