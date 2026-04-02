@@ -16,7 +16,11 @@ import sparta.coffee_shop.domain.order.repository.OrderRepository;
 import sparta.coffee_shop.domain.orderlog.entity.OrderLog;
 import sparta.coffee_shop.domain.orderlog.repository.OrderLogRepository;
 import sparta.coffee_shop.domain.payment.entity.Payment;
+import sparta.coffee_shop.domain.payment.entity.PaymentStatus;
+import sparta.coffee_shop.domain.payment.entity.PaymentType;
 import sparta.coffee_shop.domain.payment.repository.PaymentRepository;
+import sparta.coffee_shop.domain.paymentLog.entity.PaymentLog;
+import sparta.coffee_shop.domain.paymentLog.repository.PaymentLogRepository;
 import sparta.coffee_shop.domain.user.entity.User;
 import sparta.coffee_shop.domain.user.repository.UserRepository;
 
@@ -32,6 +36,7 @@ public class PortoneOrderService {
     private final OrderRepository orderRepository;
     private final OrderLogRepository orderLogRepository;
     private final PaymentRepository paymentRepository;
+    private final PaymentLogRepository paymentLogRepository;
 
     @Transactional
     public PortoneOrderResponse createOrder(PortoneOrderRequest request) {
@@ -56,7 +61,12 @@ public class PortoneOrderService {
         orderLogRepository.save(new OrderLog(order, OrderStatus.PENDING, OrderStatus.PAYMENT_PENDING, null));
 
         // 5. Payment 미리 생성 (PENDING 상태 — 이후 웹훅/검증에서 업데이트)
-        paymentRepository.save(new Payment(order, menu.getPrice(), merchantUid, null));
+        // 예정 결제 금액 미리 저장
+        Payment savedPayment = paymentRepository.save(new Payment(order, menu.getPrice(), merchantUid, null));
+        paymentLogRepository.save(new PaymentLog(
+                savedPayment, null, PaymentStatus.PENDING,
+                PaymentType.PORTONE, null, menu.getPrice(), "포트원 결제 시작"
+        ));
 
         log.info("[포트원 주문 생성] orderId={}, merchantUid={}, amount={}", order.getId(), merchantUid, menu.getPrice());
 

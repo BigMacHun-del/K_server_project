@@ -19,7 +19,10 @@ import sparta.coffee_shop.domain.payment.dto.request.PortoneWebhookRequest;
 import sparta.coffee_shop.domain.payment.dto.response.PortonePaymentResponse;
 import sparta.coffee_shop.domain.payment.entity.Payment;
 import sparta.coffee_shop.domain.payment.entity.PaymentStatus;
+import sparta.coffee_shop.domain.payment.entity.PaymentType;
 import sparta.coffee_shop.domain.payment.repository.PaymentRepository;
+import sparta.coffee_shop.domain.paymentLog.entity.PaymentLog;
+import sparta.coffee_shop.domain.paymentLog.repository.PaymentLogRepository;
 
 @Slf4j
 @Service
@@ -27,6 +30,7 @@ import sparta.coffee_shop.domain.payment.repository.PaymentRepository;
 public class PortonePaymentService {
 
     private final PaymentRepository paymentRepository;
+    private final PaymentLogRepository paymentLogRepository;
     private final OrderLogRepository orderLogRepository;
     private final PortoneClient portoneClient;
     private final ApplicationEventPublisher eventPublisher;
@@ -49,6 +53,11 @@ public class PortonePaymentService {
         if (portoneResult == null || !portoneResult.isPaid()) {
             payment.fail();
             updateOrderStatus(payment.getOrder(), OrderStatus.PAYMENT_PENDING, OrderStatus.FAILED, "포트원 결제 미완료");
+            paymentLogRepository.save(new PaymentLog(
+                    payment, PaymentStatus.PENDING, PaymentStatus.FAIL,
+                    PaymentType.PORTONE, request.getPortonePaymentId(),
+                    0, "포트원 결제 미완료"
+            ));
             throw new ServiceErrorException(ErrorEnum.ERR_PAYMENT_PORTONE_FAILED);
         }
 
@@ -56,6 +65,11 @@ public class PortonePaymentService {
         if (portoneResult.getPaidAmount() != payment.getTotalPrice()) {
             payment.fail();
             updateOrderStatus(payment.getOrder(), OrderStatus.PAYMENT_PENDING, OrderStatus.FAILED, "결제 금액 불일치");
+            paymentLogRepository.save(new PaymentLog(
+                    payment, PaymentStatus.PENDING, PaymentStatus.FAIL,
+                    PaymentType.PORTONE, request.getPortonePaymentId(),
+                    portoneResult.getPaidAmount(), "결제 금액 불일치"
+            ));
             log.error("[금액 불일치] expected={}, actual={}", payment.getTotalPrice(), portoneResult.getPaidAmount());
             throw new ServiceErrorException(ErrorEnum.ERR_PAYMENT_AMOUNT_MISMATCH);
         }
@@ -63,6 +77,11 @@ public class PortonePaymentService {
         // 5. 결제 확인 처리
         payment.confirm(request.getPortonePaymentId());
         updateOrderStatus(payment.getOrder(), OrderStatus.PAYMENT_PENDING, OrderStatus.PAID, null);
+        paymentLogRepository.save(new PaymentLog(
+                payment, PaymentStatus.PENDING, PaymentStatus.SUCCESS,
+                PaymentType.PORTONE, request.getPortonePaymentId(),
+                portoneResult.getPaidAmount(), null
+        ));
 
         // 6. 데이터 플랫폼 이벤트 발행
         Order order = payment.getOrder();
@@ -125,12 +144,22 @@ public class PortonePaymentService {
         if (portoneResult.getPaidAmount() != payment.getTotalPrice()) {
             payment.fail();
             updateOrderStatus(payment.getOrder(), OrderStatus.PAYMENT_PENDING, OrderStatus.FAILED, "웹훅 금액 불일치");
+            paymentLogRepository.save(new PaymentLog(
+                    payment, PaymentStatus.PENDING, PaymentStatus.FAIL,
+                    PaymentType.PORTONE, portonePaymentId,
+                    portoneResult.getPaidAmount(), "웹훅 금액 불일치"
+            ));
             log.error("[웹훅 금액 불일치] expected={}, actual={}", payment.getTotalPrice(), portoneResult.getPaidAmount());
             return;
         }
 
         payment.confirm(portonePaymentId);
         updateOrderStatus(payment.getOrder(), OrderStatus.PAYMENT_PENDING, OrderStatus.PAID, null);
+        paymentLogRepository.save(new PaymentLog(
+                payment, PaymentStatus.PENDING, PaymentStatus.SUCCESS,
+                PaymentType.PORTONE, portonePaymentId,
+                portoneResult.getPaidAmount(), null
+        ));
 
         Order order = payment.getOrder();
         eventPublisher.publishEvent(new OrderCompletedEvent(

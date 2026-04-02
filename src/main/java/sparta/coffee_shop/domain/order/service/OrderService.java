@@ -19,7 +19,10 @@ import sparta.coffee_shop.domain.orderlog.entity.OrderLog;
 import sparta.coffee_shop.domain.orderlog.repository.OrderLogRepository;
 import sparta.coffee_shop.domain.payment.entity.Payment;
 import sparta.coffee_shop.domain.payment.entity.PaymentStatus;
+import sparta.coffee_shop.domain.payment.entity.PaymentType;
 import sparta.coffee_shop.domain.payment.repository.PaymentRepository;
+import sparta.coffee_shop.domain.paymentLog.entity.PaymentLog;
+import sparta.coffee_shop.domain.paymentLog.repository.PaymentLogRepository;
 import sparta.coffee_shop.domain.point.entity.Point;
 import sparta.coffee_shop.domain.point.repository.PointRepository;
 import sparta.coffee_shop.domain.pointlog.entity.PointLog;
@@ -41,6 +44,7 @@ public class OrderService {
     private final OrderLogRepository orderLogRepository;
     private final PaymentRepository paymentRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final PaymentLogRepository paymentLogRepository;
 
     @Transactional
     public OrderResponse order(OrderRequest request) {
@@ -78,7 +82,13 @@ public class OrderService {
         pointLogRepository.save(new PointLog(user, point, PointLogType.USE, menu.getPrice(), point.getBalance()));
 
         // 7. 결제 생성 (SUCCESS)
-        paymentRepository.save(new Payment(order, menu.getPrice(), PaymentStatus.SUCCESS));
+        Payment savedPayment = paymentRepository.save(new Payment(order, menu.getPrice(), PaymentStatus.SUCCESS));
+        //결제 이력(포인트)
+        paymentLogRepository.save(new PaymentLog(
+                savedPayment, null, PaymentStatus.SUCCESS,
+                PaymentType.POINT, null,
+                savedPayment.getTotalPrice(), null
+        ));
 
         // 8. 주문 상태 PAID 변경
         order.updateStatus(OrderStatus.PAID);
