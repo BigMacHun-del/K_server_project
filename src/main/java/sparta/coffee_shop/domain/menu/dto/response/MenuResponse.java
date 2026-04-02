@@ -1,14 +1,18 @@
 package sparta.coffee_shop.domain.menu.dto.response;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import sparta.coffee_shop.domain.menu.entity.Menu;
 
-@Getter
-public class MenuResponse {
+import java.io.Serializable;
 
-    private final Long menuId;
-    private final String productName;
-    private final int price;
+@Getter
+@NoArgsConstructor
+public class MenuResponse implements Serializable {
+
+    private Long menuId;
+    private String productName;
+    private int price;
 
     private MenuResponse(Long menuId, String productName, int price) {
         this.menuId = menuId;
