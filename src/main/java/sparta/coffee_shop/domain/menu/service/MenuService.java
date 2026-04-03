@@ -66,9 +66,11 @@ public class MenuService {
             keys.add(POPULAR_KEY_PREFIX + LocalDate.now().minusDays(i));
         }
 
+        // ZUNIONSTORE로 합산
         String resultKey = POPULAR_KEY_PREFIX + "result:" + LocalDate.now();
         redisTemplate.opsForZSet().unionAndStore(keys.get(0), keys.subList(1, keys.size()), resultKey);
 
+        // 점수 높은 순 Top3 조회
         Set<ZSetOperations.TypedTuple<String>> tuples =
                 redisTemplate.opsForZSet().reverseRangeWithScores(resultKey, 0, TOP_COUNT - 1);
 

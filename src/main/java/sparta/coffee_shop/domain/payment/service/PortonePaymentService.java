@@ -3,6 +3,7 @@ package sparta.coffee_shop.domain.payment.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sparta.coffee_shop.common.exception.ErrorEnum;
@@ -24,16 +25,22 @@ import sparta.coffee_shop.domain.payment.repository.PaymentRepository;
 import sparta.coffee_shop.domain.paymentLog.entity.PaymentLog;
 import sparta.coffee_shop.domain.paymentLog.repository.PaymentLogRepository;
 
+import java.time.Duration;
+import java.time.LocalDate;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class PortonePaymentService {
+
+    private static final String POPULAR_KEY_PREFIX = "coffee:popular:";
 
     private final PaymentRepository paymentRepository;
     private final PaymentLogRepository paymentLogRepository;
     private final OrderLogRepository orderLogRepository;
     private final PortoneClient portoneClient;
     private final ApplicationEventPublisher eventPublisher;
+    private final RedisTemplate<String, String> redisTemplate;
 
     @Transactional
     public PortonePaymentResponse confirmPayment(PortonePaymentRequest request) {
@@ -83,8 +90,11 @@ public class PortonePaymentService {
                 portoneResult.getPaidAmount(), null
         ));
 
-        // 6. 데이터 플랫폼 이벤트 발행
+        // 6. Redis 인기 메뉴 점수 증가
         Order order = payment.getOrder();
+        updatePopularMenu(order.getMenu().getId());
+
+        // 7. 데이터 플랫폼 이벤트 발행
         eventPublisher.publishEvent(new OrderCompletedEvent(
                 order.getUser().getUserKey(), order.getMenu().getId(), payment.getTotalPrice()
         ));
@@ -103,7 +113,6 @@ public class PortonePaymentService {
             return;
         }
 
-        // 멱등성 검증 - 동일 portonePaymentId 이미 처리됐으면 무시
         if (paymentRepository.existsByPortonePaymentId(portonePaymentId)) {
             log.info("[웹훅 중복 수신 무시] portonePaymentId={}", portonePaymentId);
             return;
@@ -114,7 +123,6 @@ public class PortonePaymentService {
             return;
         }
 
-        // 웹훅 데이터 직접 신뢰 X → 포트원에 재조회 후 검증
         PortonePaymentResult portoneResult = portoneClient.getPayment(portonePaymentId);
 
         if (portoneResult == null || !portoneResult.isPaid()) {
@@ -122,7 +130,6 @@ public class PortonePaymentService {
             return;
         }
 
-        // customData에 merchantUid를 담아서 포트원으로 전달했다는 클라이언트 약속
         String merchantUid = portoneResult.getCustomData();
         if (merchantUid == null) {
             log.warn("[웹훅 merchantUid 없음] portonePaymentId={}", portonePaymentId);
@@ -140,7 +147,6 @@ public class PortonePaymentService {
             return;
         }
 
-        // 금액 검증
         if (portoneResult.getPaidAmount() != payment.getTotalPrice()) {
             payment.fail();
             updateOrderStatus(payment.getOrder(), OrderStatus.PAYMENT_PENDING, OrderStatus.FAILED, "웹훅 금액 불일치");
@@ -161,7 +167,10 @@ public class PortonePaymentService {
                 portoneResult.getPaidAmount(), null
         ));
 
+        // Redis 인기 메뉴 점수 증가
         Order order = payment.getOrder();
+        updatePopularMenu(order.getMenu().getId());
+
         eventPublisher.publishEvent(new OrderCompletedEvent(
                 order.getUser().getUserKey(), order.getMenu().getId(), payment.getTotalPrice()
         ));
@@ -172,5 +181,16 @@ public class PortonePaymentService {
     private void updateOrderStatus(Order order, OrderStatus from, OrderStatus to, String reason) {
         order.updateStatus(to);
         orderLogRepository.save(new OrderLog(order, from, to, reason));
+    }
+
+    // Redis 장애가 결제 트랜잭션에 영향 주지 않도록 try-catch 처리
+    private void updatePopularMenu(Long menuId) {
+        try {
+            String todayKey = POPULAR_KEY_PREFIX + LocalDate.now();
+            redisTemplate.opsForZSet().incrementScore(todayKey, String.valueOf(menuId), 1);
+            redisTemplate.expire(todayKey, Duration.ofDays(8));
+        } catch (Exception e) {
+            log.warn("Redis 인기 메뉴 업데이트 실패 - menuId: {}", menuId, e);
+        }
     }
 }
