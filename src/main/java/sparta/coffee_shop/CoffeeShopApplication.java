@@ -3,9 +3,11 @@ package sparta.coffee_shop;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.scheduling.annotation.EnableAsync;
+import sparta.coffee_shop.common.config.PortoneProperties;
 import sparta.coffee_shop.domain.menu.entity.Menu;
 import sparta.coffee_shop.domain.menu.repository.MenuRepository;
 import sparta.coffee_shop.domain.point.entity.Point;
@@ -16,6 +18,7 @@ import sparta.coffee_shop.domain.user.repository.UserRepository;
 @EnableAsync
 @EnableJpaAuditing
 @SpringBootApplication
+@EnableConfigurationProperties(PortoneProperties.class)
 public class CoffeeShopApplication {
 
     public static void main(String[] args) {

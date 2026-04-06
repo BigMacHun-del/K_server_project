@@ -12,3 +12,8 @@ spring:
     redis:
       host: localhost
       port: 6379
+
+portone:
+  api:
+    secret: ldebLabDdRMdG4ITfq5pOBzrvr6Fxm84lajoVAE2YrEuSSLhVtQF40BekT3Q3Hobjvbk5WTZbx8W4tW5
+    base-url: https://api.portone.io

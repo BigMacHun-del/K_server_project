@@ -2,6 +2,8 @@ package sparta.coffee_shop.domain.menu.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
@@ -31,12 +33,22 @@ public class MenuService {
     private final OrderRepository orderRepository;
     private final RedisTemplate<String, String> redisTemplate;
 
+    // 메뉴 목록은 자주 바뀌지 않으므로 Redis에 5분 캐싱
+    // RedisCacheConfig에서 "menus" 캐시 TTL = 5분 설정
+    @Cacheable(cacheNames = "menus", key = "'all'")
     @Transactional(readOnly = true)
     public List<MenuResponse> getMenus() {
+        log.info("[Cache MISS] 메뉴 목록 DB 조회");
         return menuRepository.findAllByIsActiveTrue()
                 .stream()
                 .map(MenuResponse::from)
                 .toList();
+    }
+
+    // 메뉴 데이터 변경 시 캐시 무효화 (향후 메뉴 추가/수정 API 연동용)
+    @CacheEvict(cacheNames = "menus", key = "'all'")
+    public void evictMenuCache() {
+        log.info("[Cache EVICT] 메뉴 캐시 삭제");
     }
 
     public List<PopularMenuResponse> getPopularMenus() {
@@ -49,16 +61,16 @@ public class MenuService {
     }
 
     private List<PopularMenuResponse> getPopularMenusFromRedis() {
-        // 최근 7일 키 수집
         List<String> keys = new ArrayList<>();
         for (int i = 0; i < POPULAR_DAYS; i++) {
             keys.add(POPULAR_KEY_PREFIX + LocalDate.now().minusDays(i));
         }
 
-        // ZUNIONSTORE로 합산 후 Top3 조회
+        // ZUNIONSTORE로 합산
         String resultKey = POPULAR_KEY_PREFIX + "result:" + LocalDate.now();
         redisTemplate.opsForZSet().unionAndStore(keys.get(0), keys.subList(1, keys.size()), resultKey);
 
+        // 점수 높은 순 Top3 조회
         Set<ZSetOperations.TypedTuple<String>> tuples =
                 redisTemplate.opsForZSet().reverseRangeWithScores(resultKey, 0, TOP_COUNT - 1);
 
